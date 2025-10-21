@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # Servicio de la base de datos PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mipassword123
+      POSTGRES_DB: tododb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Servicio de la aplicación Node.js
+  app:
+    build: .
+    container_name: crud_app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: tododb
+      DB_USER: postgres
+      DB_PASSWORD: mipassword123
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app-network
+
+# Volumen para persistir datos de PostgreSQL
+volumes:
+  postgres_data:
+
+# Red para comunicación entre contenedores
+networks:
+  app-network:
+    driver: bridge
